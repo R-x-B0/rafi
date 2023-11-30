@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Direct Video Upload to Firebase Storage</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #000;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      max-width: 400px;
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.8);
+      border-radius: 10px;
+      box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    h2 {
+      color: #fff;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .upload-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .file-input-label {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background-color: #f5f5f5;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress {
+      height: 100%;
+      background-color: #4CAF50;
+      width: 0;
+    }
+
+    .download-container {
+      text-align: center;
+    }
+
+    .download-input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+      border-radius: 5px;
+      border: none;
+    }
+
+    .download-button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: #fff;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+    }
+
+    .download-link {
+      color: #fff;
+      text-decoration: none;
+      margin-top: 10px;
+      display: inline-block;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.4.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.4.1/firebase-storage.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <h2>Direct Video Upload to Firebase Storage</h2>
+    <div class="upload-container">
+      <label for="videoInput" class="file-input-label">Select Video</label>
+      <input type="file" id="videoInput" accept="video/*">
+      <div class="progress-bar">
+        <div id="uploadProgressBar" class="progress"></div>
+      </div>
+      <button onclick="uploadVideo()">Upload Video</button>
+    </div>
+    <div class="download-container">
+      <input type="text" id="downloadCodeInput" class="download-input" placeholder="Enter Download Code">
+      <button onclick="downloadVideo()" class="download-button">Download Video</button>
+      <a href="#" id="downloadLink" class="download-link" style="display: none;"></a>
+    </div>
+  </div>
+  <script>
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    function uploadVideo() {
+      const fileInput = document.getElementById('videoInput');
+      const file = fileInput.files[0];
+      const storageRef = firebase.storage().ref('videos/' + file.name);
+      const uploadTask = storageRef.put(file);
+
+      const progressBar = document.getElementById('uploadProgressBar');
+      uploadTask.on('state_changed',
+        (snapshot) => {
+          // Track upload progress
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          progressBar.style.width = `${progress}%`;
+        },
+        (error) => {
+          // Handle upload error
+          console.error(error);
+        },
+        () => {
+          // Handle successful upload
+          uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+            // Generate download code
+            const downloadCode = Math.random().toString(36).substring(7);
+            // Set download code in local storage
+            localStorage.setItem(downloadCode, downloadURL);
+
+            // Display download link and code
+            const downloadLink = document.getElementById('downloadLink');
+            downloadLink.href = downloadURL;
+            downloadLink.innerText = 'Download Video';
+            downloadLink.style.display = 'inline-block';
+
+            const downloadCodeInput = document.getElementById('downloadCodeInput');
+            downloadCodeInput.value = downloadCode;
+          });
+        }
+      );
+    }
+
+    function downloadVideo() {
+      const downloadCodeInput = document.getElementById('downloadCodeInput');
+      const downloadCode = downloadCodeInput.value.trim();
+      // Get download URL from local storage using the download code
+      const downloadURL = localStorage.getItem(downloadCode);
+
+      if (downloadURL) {
+        const downloadLink = document.getElementById('downloadLink');
+        downloadLink.href = downloadURL;
+        downloadLink.click();
+      } else {
+        alert('Invalid download code');
+      }
+    }
+  </script>
+</body>
+8
+</html>
